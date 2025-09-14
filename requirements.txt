@@ -1,6 +1,9 @@
 Django==5.0.6
-django-ninja==1.1.0
+django-ninja==1.0.1
 mysqlclient==2.2.4
-uvicorn==0.30.1
-gunicorn==22.0.0
+uvicorn==0.30.0
 python-dotenv==1.0.1
+# Ninja 1.0.x usa Pydantic v2; deja rango estable
+pydantic>=2.6,<3
+reportlab==4.2.2
+Pillow==10.4.0

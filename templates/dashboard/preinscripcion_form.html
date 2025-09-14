@@ -1,0 +1,298 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Preinscripción</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{
+      --bg: #FFEDE3;
+      --card: #FFF8F2;
+      --ink: #1F2937;
+      --muted: #6B7280;
+      --border: #E8DAD0;
+      --accent: #7C9AF2;
+    }
+    body{
+      background: var(--bg);
+      color: var(--ink);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    }
+    .page-wrap{ max-width: 1160px; margin: 24px auto; padding: 0 16px; }
+    .card{
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 6px 24px rgba(31,41,55,.06);
+      padding: 22px;
+    }
+    h2,h3{ color: var(--ink); margin: 0 0 .75rem 0; }
+    h2{ font-size: 1.5rem; }
+    h3{ font-size: 1.1rem; margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1.25rem; }
+    small.subtle{ color: var(--muted); }
+
+    .form-grid, .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(220px, 1fr));
+      gap: 16px 20px;
+      align-items: start;
+    }
+    @media (max-width: 1200px){ .form-grid, .grid-3 { grid-template-columns: repeat(2,minmax(220px,1fr)); } }
+    @media (max-width: 900px) { .grid-3 { grid-template-columns: 1fr; } }
+    @media (max-width: 640px){  .form-grid{ grid-template-columns: 1fr; } }
+
+    .field, .form-group { min-width: 0; }
+    .field--span-2{ grid-column: span 2; }
+    .field--span-3{ grid-column: 1 / -1; }
+
+    .form-group input, .form-group select, .form-group textarea,
+    .fl input, .fl select, .fl textarea {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      min-height: 44px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--ink);
+      font-size: .9rem;
+    }
+    .fl textarea{ height: auto; padding: 20px 12px 8px; }
+    .fl label{
+      position: absolute;
+      left: 10px; top: 11px;
+      padding: 0 6px;
+      font-size: .88rem;
+      color: var(--muted);
+      background: #fff;
+      transition: all .16s ease;
+      pointer-events: none;
+    }
+    .fl input:focus + label,
+    .fl input:not(:placeholder-shown) + label,
+    .fl textarea:focus + label,
+    .fl textarea:not(:placeholder-shown) + label,
+    .fl select:focus + label,
+    .fl select:not([value=""]) + label {
+      top: -9px; font-size: .72rem; color: var(--accent);
+    }
+    .fl input:focus, .fl select:focus, .fl textarea:focus{
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+    }
+    .form-group.has-error input,
+    .form-group.has-error select,
+    .form-group.has-error textarea {
+      border-color:#dc3545;
+      box-shadow:0 0 0 .18rem rgba(220,53,69,.10);
+      background:#fff7f7;
+    }
+    .error-text { color:#dc3545; font-size:.85rem; margin-top:6px; }
+
+    .sticky-actions{
+      position: sticky; bottom: 0;
+      display: flex; justify-content: flex-end; gap: 10px;
+      padding: 12px 22px;
+      margin: 22px -22px -22px -22px;
+      backdrop-filter: blur(6px);
+      background: color-mix(in srgb, var(--card) 70%, transparent);
+      border-top: 1px solid var(--border);
+      border-radius: 0 0 14px 14px;
+    }
+    .btn{
+      padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border);
+      background: #fff; color: var(--ink); font-weight: 600; cursor: pointer;
+    }
+    .btn-primary{
+      background: var(--accent); border-color: var(--accent); color: white;
+    }
+    .photo-upload { display:flex; align-items:flex-start; gap:1rem; margin-top:.25rem; }
+    .foto-preview{
+      width: 120px;              /* ajusta a gusto */
+      aspect-ratio: 1 / 1;       /* siempre cuadrado */
+      object-fit: cover;
+      border-radius: 8px;
+      box-shadow: 0 0 0 1px rgba(0,0,0,.08) inset;
+      background: #fff;
+    }
+    .photo-actions { display:flex; flex-direction:column; gap:.25rem; }
+    .btn-link { background:none; border:none; color:#3B82F6; padding:0; cursor:pointer; }
+    .hint { color:#6b7280; font-size:.85rem; }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+  <form id="pre-form" method="post" enctype="multipart/form-data" class="card" novalidate>
+    {% csrf_token %}
+    <h2>Completá tus datos de preinscripción</h2>
+    <small class="subtle">Los campos obligatorios están marcados con *</small>
+
+    {% if form.errors or form.non_field_errors %}
+      <div class="alert alert-danger" style="margin:1rem 0; padding:1rem; background:#fdd; color:#c00; border-radius:10px;">
+        <strong>Revisá los campos marcados.</strong>
+        <ul style="margin:8px 0 0 18px; padding:0; list-style-position: inside;">
+          {% for field in form %}
+            {% for error in field.errors %}
+              <li>{{ field.label }}: {{ error }}</li>
+            {% endfor %}
+          {% endfor %}
+          {% for error in form.non_field_errors %}
+            <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    <h3>Datos personales</h3>
+    <div class="grid-3">
+      {% with field=form.carrera %}
+        <div class="form-group {% if field.errors %}has-error{% endif %}">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% for error in field.errors %}<div class="error-text">{{ error }}</div>{% endfor %}
+        </div>
+      {% endwith %}
+
+      {% with field=form.cuil %}
+        <div class="form-group {% if field.errors %}has-error{% endif %}">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% for error in field.errors %}<div class="error-text">{{ error }}</div>{% endfor %}
+        </div>
+      {% endwith %}
+
+      {% with field=form.dni %}
+        <div class="form-group {% if field.errors %}has-error{% endif %}">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% for error in field.errors %}<div class="error-text">{{ error }}</div>{% endfor %}
+        </div>
+      {% endwith %}
+    </div>
+    <div class="form-grid" style="margin-top: 16px;">
+      <div class="field fl">{{ form.apellido }}<label>Apellido</label></div>
+      <div class="field fl">{{ form.nombres }}<label>Nombres</label></div>
+      <div class="field fl">{{ form.fecha_nacimiento }}<label>Fecha de nacimiento</label></div>
+      <div class="field fl">{{ form.estado_civil }}<label>Estado civil</label></div>
+      <div class="field fl">{{ form.localidad_nac }}<label>Localidad de nacimiento</label></div>
+      <div class="field fl">{{ form.provincia_nac }}<label>Provincia de nacimiento</label></div>
+      <div class="field fl">{{ form.pais_nac }}<label>País de nacimiento</label></div>
+      <div class="field fl">{{ form.nacionalidad }}<label>Nacionalidad</label></div>
+    </div>
+
+    <h3>Datos de contacto</h3>
+    <div class="form-grid">
+      <div class="field field--span-3 fl">{{ form.domicilio }}<label>Domicilio</label></div>
+      <div class="field fl">{{ form.tel_fijo }}<label>Teléfono fijo</label></div>
+      <div class="field fl">{{ form.tel_movil }}<label>Teléfono móvil</label></div>
+      <div class="field fl">{{ form.email }}<label>Email</label></div>
+    </div>
+
+    <h3>Datos laborales (opcional)</h3>
+    <div class="form-grid">
+        <div class="field check-item"><label>{{ form.trabaja }} Trabaja actualmente</label></div>
+        <div class="field field--span-2 fl">{{ form.empleador }}<label>Empleador</label></div>
+        <div class="field fl">{{ form.horario_trabajo }}<label>Horario de trabajo</label></div>
+        <div class="field field--span-3 fl">{{ form.domicilio_trabajo }}<label>Domicilio laboral</label></div>
+    </div>
+
+    <h3>Estudios cursados</h3>
+    <div class="form-grid">
+      <div class="field field--span-3"><strong>Secundario</strong></div>
+      <div class="field field--span-2 fl">{{ form.sec_titulo }}<label>Título secundario</label></div>
+      <div class="field fl">{{ form.sec_fecha_egreso }}<label>Fecha de egreso</label></div>
+      <div class="field fl">{{ form.sec_establecimiento }}<label>Establecimiento</label></div>
+      <div class="field fl">{{ form.sec_localidad }}<label>Localidad</label></div>
+      <div class="field fl">{{ form.provincia_nac }}<label>Provincia</label></div>
+      <div class="field fl">{{ form.pais_nac }}<label>País</label></div>
+
+      <div class="field field--span-3"><strong>Terciario/Universitario (opcional)</strong></div>
+      <div class="field field--span-2 fl">{{ form.sup1_titulo }}<label>Título</label></div>
+      <div class="field fl">{{ form.sup1_fecha_egreso }}<label>Fecha de egreso</label></div>
+
+      <div class="field field--span-3"><strong>Otro Título (opcional)</strong></div>
+      <div class="field field--span-2 fl">{{ form.sup2_titulo }}<label>Título</label></div>
+      <div class="field fl">{{ form.sup2_fecha_egreso }}<label>Fecha de egreso</label></div>
+    </div>
+
+    <h3 style="margin-top:18px;">Foto 4x4</h3>
+    <div class="photo-upload">
+      <img
+        id="foto4x4Preview"
+        class="foto-preview"
+        alt="Foto 4x4"
+        src="{% if form.instance.foto_4x4 %}{{ form.instance.foto_4x4.url }}{% else %}{% static 'img/placeholder-4x4.svg' %}{% endif %}"
+        data-placeholder="{% static 'img/placeholder-4x4.svg' %}"
+      />
+
+      <div class="photo-actions">
+        {{ form.foto_4x4 }}
+
+        <small class="hint">Podés subir una selfie; el sistema la ajusta automáticamente a 4×4.</small>
+        <button type="button" id="clearFoto" class="btn-link">Quitar foto</button>
+      </div>
+    </div>
+
+    <div class="sticky-actions">
+      <button type="reset" class="btn">Limpiar</button>
+      <button type="submit" class="btn btn-primary">Enviar preinscripción</button>
+    </div>
+  </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  // CUIL mask
+  const cuil = document.getElementById('id_cuil');
+  if (cuil) {
+    cuil.addEventListener('input', function () {
+      let d = this.value.replace(/\D/g, '').slice(0, 11);
+      if (d.length <= 2) { this.value = d; return; }
+      if (d.length <= 10) { this.value = d.slice(0,2) + '-' + d.slice(2); return; }
+      this.value = d.slice(0,2) + '-' + d.slice(2,10) + '-' + d.slice(10);
+    });
+  }
+
+  // Photo preview
+  const input = document.querySelector('input[type="file"][name="foto_4x4"]');
+  const preview = document.getElementById('foto4x4Preview');
+  const PLACEHOLDER = preview.src; // el data-uri
+
+  if (!input || !preview) return;
+
+  input.setAttribute('accept', 'image/*');
+
+  input.addEventListener('change', e => {
+    const file = e.target.files?.[0];
+    if (!file) { preview.src = PLACEHOLDER; return; }
+    const reader = new FileReader();
+    reader.onload = ev => preview.src = ev.target.result;
+    reader.readAsDataURL(file);
+  });
+
+  const clear = document.getElementById('clearFoto');
+  if (clear) {
+    clear.addEventListener('click', function () {
+      input.value = '';
+      preview.src = PLACEHOLDER;
+    });
+  }
+});
+</script>
+
+</body>
+</html>onst clear = document.getElementById('clearFoto');
+  if (clear) {
+    clear.addEventListener('click', function () {
+      input.value = '';
+      preview.src = placeholder;
+    });
+  }
+});
+</script>
+
+</body>
+</html>

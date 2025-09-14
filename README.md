@@ -1,6 +1,6 @@
 # IPES5
 
-Reconstrucción de IPES4 → IPES5 con Django 5 + Ninja + MySQL.
+Reconstrucción de IPES5 con Django 5 + Ninja + MySQL.
 
 ## 🚀 Setup
 

@@ -1,0 +1,48 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<h2 class="text-lg font-semibold mb-4">Panel de Gestión</h2>
+
+<div class="grid md:grid-cols-2 gap-6">
+  <div class="bg-white p-4 rounded-xl shadow">
+    <h3 class="font-medium mb-2">Preinscripciones por carrera</h3>
+    <ul class="text-sm space-y-1">
+      {% for row in por_carrera %}
+        <li class="flex justify-between">
+          <span>{{ row.carrera__nombre|default:"(Sin carrera)" }}</span>
+          <span class="font-semibold">{{ row.total }}</span>
+        </li>
+      {% empty %}
+        <li>Sin datos</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div class="bg-white p-4 rounded-xl shadow">
+    <h3 class="font-medium mb-2">Últimas preinscripciones</h3>
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left border-b">
+          <th class="py-1">#</th>
+          <th>Estudiante</th>
+          <th>Carrera</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in recientes %}
+        <tr class="border-b">
+          <td class="py-1">{{ p.id }}</td>
+          <td>{{ p.apellido }}, {{ p.nombres }} — DNI {{ p.dni }}</td>
+          <td>{{ p.carrera.nombre if p.carrera }}</td>
+          <td class="text-right">
+            <a class="text-blue-600 underline" href="/api/v1/preinscripciones/{{ p.id }}/pdf" target="_blank">PDF</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="py-2">Sin preinscripciones</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Preinscripción enviada</title>
+<style>
+  body{font-family: system-ui, Arial; background:#FFEFE4; color:#1f2937;}
+  .card{max-width:760px; margin:40px auto; background:#fff; border-radius:14px; padding:24px; box-shadow:0 6px 18px rgba(0,0,0,.08);}
+  a.btn{display:inline-block; padding:10px 14px; border-radius:10px; text-decoration:none; background:#3B82F6; color:#fff; font-weight:600}
+</style>
+</head>
+<body>
+  <div class="card">
+    {% if messages %}
+      <div class="messages">
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }}" style="padding: 1rem; margin-bottom: 1rem; border-radius: 10px; background: #e0f0ff; color: #1f2937;">
+              {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <h2>¡Gracias, {{ pre.nombres }}!</h2>
+    <p>Tu preinscripción <strong>{{ pre.numero }}</strong> fue registrada correctamente.</p>
+
+    {% if pre.foto_4x4 %}
+      <img src="{{ pre.foto_4x4.url }}" alt="Foto 4x4" style="width:180px;height:180px;object-fit:cover;border-radius:12px;border:1px solid #eee; margin-top: 1rem;"/>
+    {% endif %}
+    {% if link_pdf %}
+      <p>Puedes descargar tu planilla en PDF:</p>
+      <p><a class="btn" href="{{ link_pdf }}" target="_blank" rel="noopener">Descargar PDF</a></p>
+    {% else %}
+      <p>El PDF se generará en unos segundos. Actualizá esta página.</p>
+    {% endif %}
+  </div>
+</body>
+</html>

@@ -1,0 +1,193 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: A4; margin: 18mm 15mm 18mm 15mm; }
+  body { font-family: DejaVu Sans, Arial, Helvetica, sans-serif; font-size: 11pt; color: #111; }
+  h1 { font-size: 18pt; margin: 0 0 6mm 0; }
+  h2 { font-size: 13pt; margin: 10px 0 6px; }
+  .box { display:inline-block; width:11px; height:11px; border:1px solid #000; margin-right:6px; }
+  .row { display: flex; gap: 12px; }
+  .col { flex: 1; }
+  .label { font-weight: bold; }
+  .value { border-bottom: 1px solid #333; padding: 2px 0; }
+  .card { border: 1px solid #ddd; border-radius: 6px; padding: 10px; margin-bottom: 10px; }
+  .small { font-size: 9pt; color: #444; }
+  .divider { border-top: 1px dashed #333; margin: 16px 0; }
+  table { width: 100%; border-collapse: collapse; }
+  td { vertical-align: top; padding: 3px 4px; }
+  .docs-grid { columns: 2; column-gap: 18px; }
+  .docs-item { break-inside: avoid; margin: 5px 0; }
+</style>
+</head>
+<body>
+
+  <h1>Planilla de Preinscripción {{ pre.creado|date:"Y" }}</h1>
+  <div class="small">N° trámite: <strong>{{ pre.numero }}</strong> &nbsp;&nbsp; Fecha: {{ pre.creado|date:"d/m/Y H:i" }}</div>
+
+  <h2>1) Datos personales</h2>
+  <div class="card">
+    <table>
+      <tr>
+        <td class="label">Carrera:</td>
+        <td class="value">{{ pre.carrera }}</td>
+        <td class="label">DNI:</td>
+        <td class="value">{{ pre.dni }}</td>
+      </tr>
+      <tr>
+        <td class="label">Apellido:</td>
+        <td class="value">{{ pre.apellido }}</td>
+        <td class="label">Nombres:</td>
+        <td class="value">{{ pre.nombres }}</td>
+      </tr>
+      <tr>
+        <td class="label">CUIL/CUIT:</td>
+        <td class="value">{{ pre.cuil_cuit }}</td>
+        <td class="label">Fecha de nacimiento:</td>
+        <td class="value">{{ pre.fecha_nacimiento|date:"d/m/Y" }}</td>
+      </tr>
+      <tr>
+        <td class="label">Estado civil:</td>
+        <td class="value">{{ pre.estado_civil }}</td>
+        <td class="label">Nacionalidad:</td>
+        <td class="value">{{ pre.nacionalidad }}</td>
+      </tr>
+      <tr>
+        <td class="label">Localidad nac.:</td>
+        <td class="value">{{ pre.localidad_nac }}</td>
+        <td class="label">Provincia nac.:</td>
+        <td class="value">{{ pre.provincia_nac }}</td>
+      </tr>
+      <tr>
+        <td class="label">País nac.:</td>
+        <td class="value">{{ pre.pais_nac }}</td>
+        <td></td><td></td>
+      </tr>
+    </table>
+  </div>
+
+  <h2>2) Datos de contacto</h2>
+  <div class="card">
+    <table>
+      <tr>
+        <td class="label">Domicilio:</td>
+        <td class="value" colspan="3">{{ pre.domicilio }}</td>
+      </tr>
+      <tr>
+        <td class="label">Tel. fijo:</td>
+        <td class="value">{{ pre.tel_fijo }}</td>
+        <td class="label">Tel. móvil:</td>
+        <td class="value">{{ pre.tel_movil }}</td>
+      </tr>
+      <tr>
+        <td class="label">Email:</td>
+        <td class="value" colspan="3">{{ pre.email }}</td>
+      </tr>
+      <tr>
+        <td class="label">Contacto emergencia:</td>
+        <td class="value">{{ pre.emergencia_telefono }}</td>
+        <td class="label">Parentesco:</td>
+        <td class="value">{{ pre.emergencia_parentesco }}</td>
+      </tr>
+    </table>
+  </div>
+
+  <h2>3) Datos laborales (opcional)</h2>
+  <div class="card">
+    <table>
+      <tr>
+        <td class="label">Trabaja:</td>
+        <td class="value">{{ pre.trabaja|yesno:"Sí,No" }}</td>
+        <td class="label">Horario de trabajo:</td>
+        <td class="value">{{ pre.horario_trabajo }}</td>
+      </tr>
+      <tr>
+        <td class="label">Empleador:</td>
+        <td class="value">{{ pre.empleador }}</td>
+        <td class="label">Domicilio de trabajo:</td>
+        <td class="value">{{ pre.domicilio_trabajo }}</td>
+      </tr>
+    </table>
+  </div>
+
+  <h2>4) Estudios cursados</h2>
+  <div class="card">
+    <div class="row">
+      <div class="col">
+        <div class="label">Secundario</div>
+        <div class="small">
+          Título: {{ pre.sec_titulo }}<br>
+          Establecimiento: {{ pre.sec_establecimiento }}<br>
+          Fecha egreso: {{ pre.sec_fecha_egreso|date:"d/m/Y" }}<br>
+          Localidad: {{ pre.sec_localidad }} – Provincia: {{ pre.sec_provincia }} – País: {{ pre.sec_pais }}
+        </div>
+      </div>
+      <div class="col">
+        <div class="label">Terciario/Universitario (1)</div>
+        <div class="small">
+          Título: {{ pre.sup1_titulo }}<br>
+          Establecimiento: {{ pre.sup1_establecimiento }}<br>
+          Fecha egreso: {{ pre.sup1_fecha_egreso|date:"d/m/Y" }}<br>
+          Localidad: {{ pre.sup1_localidad }} – Provincia: {{ pre.sup1_provincia }} – País: {{ pre.sup1_pais }}
+        </div>
+      </div>
+    </div>
+    {% if pre.sup2_titulo %}
+    <div class="row" style="margin-top:8px;">
+      <div class="col">
+        <div class="label">Terciario/Universitario (2)</div>
+        <div class="small">
+          Título: {{ pre.sup2_titulo }}<br>
+          Establecimiento: {{ pre.sup2_establecimiento }}<br>
+          Fecha egreso: {{ pre.sup2_fecha_egreso|date:"d/m/Y" }}<br>
+          Localidad: {{ pre.sup2_localidad }} – Provincia: {{ pre.sup2_provincia }} – País: {{ pre.sup2_pais }}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <h2>5) Documentación presentada (a completar por la institución)</h2>
+  <div class="card">
+    <div class="docs-grid">
+      {% if not pre.carrera or pre.carrera.codigo|default:"" not in:"CERT_DOC,CDOC" %}
+        <div class="docs-item"><span class="box"></span> Título secundario</div>
+        <div class="docs-item"><span class="box"></span> Certificado de título en trámite</div>
+        <div class="docs-item"><span class="box"></span> Adeuda materias</div>
+      {% else %}
+        <div class="docs-item"><span class="box"></span> Incumbencias</div>
+      {% endif %}
+      <div class="docs-item"><span class="box"></span> Fotocopia legalizada del título</div>
+      <div class="docs-item"><span class="box"></span> Fotocopia legalizada del analítico</div>
+      <div class="docs-item"><span class="box"></span> Fotos carnet 4x4</div>
+      <div class="docs-item"><span class="box"></span> Certificado de buena salud</div>
+      <div class="docs-item"><span class="box"></span> Folios</div>
+      <div class="docs-item"><span class="box"></span> Declaración jurada / Nota compromiso</div>
+    </div>
+
+    {% if not pre.carrera or pre.carrera.codigo|default:"" not in:"CERT_DOC,CDOC" %}
+      <p class="small" style="margin-top:6px">
+        Si “Adeuda materias”: Materias que adeuda ______________________ &nbsp;&nbsp;
+        Escuela ______________________
+      </p>
+    {% endif %}
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="small">Talón desprendible</div>
+  <table>
+    <tr>
+      <td class="label">Alumno/a:</td><td class="value">{{ pre.apellido }}, {{ pre.nombres }}</td>
+      <td class="label">DNI:</td><td class="value">{{ pre.dni }}</td>
+      <td class="label">Trámite:</td><td class="value">{{ pre.numero }}</td>
+    </tr>
+    <tr>
+      <td class="label">Carrera:</td><td class="value" colspan="5">{{ pre.carrera }}</td>
+    </tr>
+  </table>
+
+</body>
+</html>

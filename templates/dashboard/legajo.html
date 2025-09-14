@@ -1,0 +1,41 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<h2 class="text-lg font-semibold mb-4">Legajo — Inscripción #{{ insc.id }}</h2>
+
+{% if error %}
+  <div class="text-red-700">{{ error }}</div>
+{% else %}
+  <div class="bg-white p-4 rounded-xl shadow mb-4">
+    <div class="flex flex-wrap gap-6 text-sm">
+      <div><span class="font-medium">Estudiante:</span> {{ insc.estudiante }}</div>
+      <div><span class="font-medium">Carrera:</span> {{ insc.carrera }}</div>
+      <div><span class="font-medium">Legajo:</span> {{ legajo_estado }}</div>
+      <div><span class="font-medium">Condición:</span> {{ condicion }}</div>
+      <div><span class="font-medium">Cumplidos:</span> {{ cumplidos }}/{{ total }}</div>
+    </div>
+  </div>
+
+  <div class="bg-white p-4 rounded-xl shadow">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left border-b">
+          <th class="py-1">Item</th>
+          <th>Estado</th>
+          <th>Obs.</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for it in items %}
+        <tr class="border-b">
+          <td class="py-1">{{ it.tipo.nombre }}</td>
+          <td>{% if it.cumplido %}✅{% else %}—{% endif %}</td>
+          <td>{{ it.observacion|default:"" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3" class="py-2">Sin ítems de legajo</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endif %}
+{% endblock %}

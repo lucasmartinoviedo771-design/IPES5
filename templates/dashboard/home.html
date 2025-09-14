@@ -1,0 +1,14 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="grid md:grid-cols-2 gap-6">
+  <div class="bg-white p-6 rounded-xl shadow">
+    <h1 class="text-xl font-semibold mb-2">Bienvenido</h1>
+    <p class="text-sm text-slate-600">Este es un demo visual mínimo para validar flujos:</p>
+    <ul class="list-disc pl-5 mt-2 text-sm">
+      <li><a class="text-blue-600 underline" href="/preinscripcion">Formulario de Preinscripción</a></li>
+      <li><a class="text-blue-600 underline" href="/panel">Panel de gestión</a> (requiere login y rol Staff)</li>
+      <li><a class="text-blue-600 underline" href="/api/v1/docs">Swagger API</a></li>
+    </ul>
+  </div>
+</div>
+{% endblock %}
