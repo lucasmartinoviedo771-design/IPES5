@@ -1,0 +1,18 @@
+# Ignorar archivos de bytecode de Python
+__pycache__/
+*.pyc
+
+# Ignorar entorno virtual
+.venv/
+venv/
+
+# Ignorar archivos de base de datos SQLite (si usas Django con SQLite)
+*.sqlite3
+
+# Ignorar archivos de configuración de entorno
+.env
+.env.example
+
+# Ignorar carpetas de medios y logs (si son generadas/temporales)
+media/
+*.log
