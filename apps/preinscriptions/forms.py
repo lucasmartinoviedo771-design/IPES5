@@ -1,6 +1,8 @@
+import io, os
 import re
 from django import forms
 from django.core.exceptions import ValidationError
+from django.core.files.base import ContentFile
 from PIL import Image
 from .models import Preinscripcion
 
@@ -10,25 +12,29 @@ except Exception:
     Carrera = None
 
 class PreinscripcionForm(forms.ModelForm):
+    localidad_nac = forms.CharField(max_length=80, required=True)
+    provincia_nac = forms.CharField(max_length=80, required=True)
+    pais_nac = forms.CharField(max_length=80, required=True)
+
     class Meta:
         model = Preinscripcion
+        # Incluir SOLO campos que carga el/la estudiante en la preinscripción
         fields = [
-            # Datos personales y de carrera
-            "carrera", "cuil", "dni", "apellido", "nombres", "fecha_nacimiento",
-            "estado_civil", "localidad_nac", "provincia_nac", "pais_nac", "nacionalidad",
-            # Contacto
+            "carrera",
+            "cuil", "dni", "apellido", "nombres",
+            "fecha_nacimiento", "estado_civil",
+            "localidad_nac", "provincia_nac", "pais_nac", "nacionalidad",
             "domicilio", "tel_fijo", "tel_movil", "email",
-            # TODO: Estos campos no están en el modelo actual, revisar si se deben agregar
-            # "emergencia_telefono", "emergencia_parentesco",
-            # Laborales
+            # "contacto_emergencia_telefono", "contacto_emergencia_parentesco",
             "trabaja", "empleador", "horario_trabajo", "domicilio_trabajo",
-            # Estudios
-            "sec_titulo", "sec_establecimiento", "sec_fecha_egreso", "sec_localidad",
-            "sec_provincia", "sec_pais",
-            "sup1_titulo", "sup1_establecimiento", "sup1_fecha_egreso", "sup1_localidad",
-            "sup1_provincia", "sup1_pais",
-            "sup2_titulo", "sup2_establecimiento", "sup2_fecha_egreso", "sup2_localidad",
-            "sup2_provincia", "sup2_pais",
+            # Estudios secundarios
+            "sec_titulo", "sec_establecimiento", "sec_fecha_egreso",
+            "sec_localidad", "sec_provincia", "sec_pais",
+            # Estudios superiores (opcionales)
+            "sup1_titulo", "sup1_establecimiento", "sup1_fecha_egreso",
+            "sup1_localidad", "sup1_provincia", "sup1_pais",
+            "sup2_titulo", "sup2_establecimiento", "sup2_fecha_egreso",
+            "sup2_localidad", "sup2_provincia", "sup2_pais",
             # Foto
             "foto_4x4",
         ]
@@ -53,6 +59,14 @@ class PreinscripcionForm(forms.ModelForm):
         if "foto_4x4" in self.fields:
             self.fields["foto_4x4"].widget.attrs.update({"accept": "image/*"})
 
+        # Asegurar placeholders para todos los campos de texto/email/fecha
+        for name, field in self.fields.items():
+            if isinstance(field.widget, (forms.TextInput, forms.EmailInput, forms.DateInput)):
+                field.widget.attrs.setdefault("placeholder", field.label)
+            elif isinstance(field.widget, forms.Select):
+                # Para los Select, el placeholder es la primera opción vacía
+                field.empty_label = field.label
+
     def clean_cuil(self):
         val = self.cleaned_data.get("cuil", "") or ""
         digits = re.sub(r"\D", "", val)
@@ -61,64 +75,66 @@ class PreinscripcionForm(forms.ModelForm):
         return f"{digits[:2]}-{digits[2:10]}-{digits[10:]}"
 
     def clean_foto_4x4(self):
-        """
-        Acepta cualquier imagen, corrige orientación, la hace cuadrada, redimensiona y comprime.
-        """
         f = self.cleaned_data.get("foto_4x4")
         if not f:
-            return f
+            return f  # opcional, no validar si no suben nada
 
-        # Tamaño de salida
-        TARGET = 600        # px (lado)
-        QUALITY = 85        # JPEG quality
-
-        # Lee la imagen y corrige orientación
+        # 1) Abrir imagen
         try:
             img = Image.open(f)
         except Exception:
-            raise forms.ValidationError("No se pudo leer la imagen. Subí un JPG/PNG válido.")
+            raise forms.ValidationError("El archivo no es una imagen válida.")
 
-        # Corrige rotación por EXIF
-        try:
-            img = ImageOps.exif_transpose(img)
-        except Exception:
-            pass
-
-        # Convierte a RGB para JPEG
+        # 2) Normalizar modo
         if img.mode not in ("RGB", "L"):
             img = img.convert("RGB")
         elif img.mode == "L":
             img = img.convert("RGB")
 
-        # ---- Normalización a CUADRADO ----
+        # 3) Recortar al centro para dejarla cuadrada
         w, h = img.size
-        if w != h:
-            # Opción A: recorte centrado (se ve mejor)
-            side = min(w, h)
-            left = (w - side) // 2
-            top = (h - side) // 2
-            img = img.crop((left, top, left + side, top + side))
+        side = min(w, h)
+        left = (w - side) // 2
+        top = (h - side) // 2
+        img = img.crop((left, top, left + side, top + side))
 
-        # Redimensiona a 600x600 con buena calidad
-        img = img.resize((TARGET, TARGET), Image.LANCZOS)
+        # 4) Redimensionar a 600×600 (ajustá si querés)
+        target = 600
+        if img.size != (target, target):
+            img = img.resize((target, target), Image.LANCZOS)
 
-        # Comprime a JPEG en memoria
-        buffer = io.BytesIO()
-        img.save(buffer, format="JPEG", quality=QUALITY, optimize=True)
-        buffer.seek(0)
+        # 5) Guardar y controlar tamaño (máx. 4 MB)
+        MAX_BYTES = 4 * 1024 * 1024  # cambiá el tope si lo necesitás
+        quality = 90
 
-        # Construye un nuevo InMemoryUploadedFile para reemplazar el original
-        new_name = f"foto4x4_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
-        new_file = InMemoryUploadedFile(
-            buffer,
-            field_name=getattr(f, "field_name", "foto_4x4"),
-            name=new_name,
-            content_type="image/jpeg",
-            size=buffer.getbuffer().nbytes,
-            charset=None,
-        )
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=quality, optimize=True, progressive=True)
+        buf.seek(0)
 
-        return new_file
+        # Bajar calidad si supera el tope
+        while buf.tell() > MAX_BYTES and quality > 60:
+            quality -= 5
+            buf.seek(0); buf.truncate(0)
+            img.save(buf, format="JPEG", quality=quality, optimize=True, progressive=True)
+            buf.seek(0)
+
+        # Último recurso: achicar un poco la resolución si todavía pesa mucho
+        if buf.tell() > MAX_BYTES:
+            shrink = 0.85
+            while buf.tell() > MAX_BYTES and min(img.size) > 300:  # no bajar de 300×300
+                new_wh = (int(img.size[0] * shrink), int(img.size[1] * shrink))
+                img = img.resize(new_wh, Image.LANCZOS)
+                buf.seek(0); buf.truncate(0)
+                img.save(buf, format="JPEG", quality=quality, optimize=True, progressive=True)
+                buf.seek(0)
+
+        if buf.tell() > MAX_BYTES:
+            raise forms.ValidationError("La foto, aun comprimida, supera 4 MB. Subí una imagen más liviana.")
+
+        # 6) Devolver el archivo procesado
+        base, _ = os.path.splitext(getattr(f, "name", "foto_4x4.jpg"))
+        new_name = f"{base}_4x4.jpg"
+        return ContentFile(buf.read(), name=new_name)
 
     def clean(self):
         cd = super().clean()

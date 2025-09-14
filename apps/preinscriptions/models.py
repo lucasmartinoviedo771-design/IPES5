@@ -72,6 +72,7 @@ class Preinscripcion(models.Model):
     
     anio = models.PositiveIntegerField(db_index=True, default=timezone.now().year)
     numero = models.CharField(
+        "Número",
         max_length=32,
         unique=True,
         null=True, blank=True,
@@ -85,28 +86,35 @@ class Preinscripcion(models.Model):
         ordering = ["-creado"]
 
     def save(self, *args, **kwargs):
+        from django.db import transaction
+        from django.db.models import F
+        import re
+
+        if not self.anio:
+            self.anio = timezone.now().year
+
         if not self.numero:
             base = f"PRE-{self.anio}-"
-            last = (
-                Preinscripcion.objects.filter(numero__startswith=base)
-                .order_by('-numero')
-                .first()
-            )
-            sec = int(last.numero.rsplit('-', 1)[-1]) + 1 if last and last.numero else 1
-            self.numero = f"{base}{sec:04d}"
+
+            with transaction.atomic():
+                # Buscamos el último número emitido en ese año
+                last = (
+                    Preinscripcion.objects
+                    .select_for_update()  # bloquea filas durante la transacción
+                    .filter(numero__startswith=base)
+                    .order_by("-numero")
+                    .first()
+                )
+
+                if last and last.numero:
+                    m = re.search(rf"^{re.escape(base)}(\d+)$", last.numero)
+                    seq = int(m.group(1)) + 1 if m else 1
+                else:
+                    seq = 1
+
+                self.numero = f"{base}{seq:04d}"
+
         super().save(*args, **kwargs)
-
-    def clean(self):
-        if self.doc_titulo_secundario and (self.doc_cert_titulo_en_tramite or self.doc_adeuda_materias):
-            raise ValidationError("‘Título secundario’ es incompatible con ‘en trámite’ o ‘adeuda materias’.")
-        if self.doc_cert_titulo_en_tramite and (self.doc_titulo_secundario or self.doc_adeuda_materias):
-            raise ValidationError("‘Título en trámite’ es incompatible con ‘título’ o ‘adeuda materias’.")
-        if self.doc_adeuda_materias:
-            if not self.adeuda_materias_detalle.strip() or not self.adeuda_materias_escuela.strip():
-                raise ValidationError("Si marca ‘Adeuda materias’, debe indicar materias y escuela.")
-
-    def __str__(self):
-        return f"{self.apellido}, {self.nombres} ({self.dni})"
 
     def clean(self):
         if self.doc_titulo_secundario and (self.doc_cert_titulo_en_tramite or self.doc_adeuda_materias):

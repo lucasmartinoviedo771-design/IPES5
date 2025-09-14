@@ -27,7 +27,7 @@ from .schemas_public import (
     SecundarioOut, TerciarioOut, DocumentacionOut, FotoOut,
 )
 from .schemas_patch import PreinscripcionPatchIn
-from .pdf import render_preinscripcion_pdf
+from .pdf import preinscripcion_pdf
 
 router = Router(tags=["preinscripciones"])
 

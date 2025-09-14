@@ -1,0 +1,20 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="container py-5">
+  <div class="alert alert-success" role="alert">
+    <h4 class="alert-heading">¡Preinscripción enviada!</h4>
+    <p>Gracias, {{ pre.apellido }} {{ pre.nombres }}.</p>
+    <hr>
+    <p class="mb-0">
+      Número de preinscripción: <strong>{{ pre.numero|default:"(pendiente)" }}</strong><br>
+      Año: <strong>{{ pre.anio }}</strong>
+    </p>
+  </div>
+
+  {% if pre.comprobante_pdf %}
+    <a class="btn btn-primary" href="{{ pre.comprobante_pdf.url }}" target="_blank">Descargar comprobante (PDF)</a>
+  {% endif %}
+
+  <a class="btn btn-outline-secondary" href="{% url 'dashboard:preinscripcion' %}">Cargar otra preinscripción</a>
+</div>
+{% endblock %}

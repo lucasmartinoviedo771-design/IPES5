@@ -173,50 +173,63 @@
       {% endwith %}
     </div>
     <div class="form-grid" style="margin-top: 16px;">
-      <div class="field fl">{{ form.apellido }}<label>Apellido</label></div>
-      <div class="field fl">{{ form.nombres }}<label>Nombres</label></div>
-      <div class="field fl">{{ form.fecha_nacimiento }}<label>Fecha de nacimiento</label></div>
-      <div class="field fl">{{ form.estado_civil }}<label>Estado civil</label></div>
-      <div class="field fl">{{ form.localidad_nac }}<label>Localidad de nacimiento</label></div>
-      <div class="field fl">{{ form.provincia_nac }}<label>Provincia de nacimiento</label></div>
-      <div class="field fl">{{ form.pais_nac }}<label>País de nacimiento</label></div>
-      <div class="field fl">{{ form.nacionalidad }}<label>Nacionalidad</label></div>
+      <div class="field fl">{{ form.apellido }}<label>{{ form.apellido.label }}</label></div>
+      <div class="field fl">{{ form.nombres }}<label>{{ form.nombres.label }}</label></div>
+      <div class="field fl">{{ form.fecha_nacimiento }}<label>{{ form.fecha_nacimiento.label }}</label></div>
+      <div class="field fl">{{ form.estado_civil }}<label>{{ form.estado_civil.label }}</label></div>
+      <div class="field fl">{{ form.localidad_nac }}<label>{{ form.localidad_nac.label }}</label></div>
+      <div class="field fl">{{ form.provincia_nac }}<label>{{ form.provincia_nac.label }}</label></div>
+      <div class="field fl">{{ form.pais_nac }}<label>{{ form.pais_nac.label }}</label></div>
+      <div class="field fl">{{ form.nacionalidad }}<label>{{ form.nacionalidad.label }}</label></div>
     </div>
 
     <h3>Datos de contacto</h3>
     <div class="form-grid">
-      <div class="field field--span-3 fl">{{ form.domicilio }}<label>Domicilio</label></div>
-      <div class="field fl">{{ form.tel_fijo }}<label>Teléfono fijo</label></div>
-      <div class="field fl">{{ form.tel_movil }}<label>Teléfono móvil</label></div>
-      <div class="field fl">{{ form.email }}<label>Email</label></div>
+      <div class="field field--span-3 fl">{{ form.domicilio }}<label>{{ form.domicilio.label }}</label></div>
+      <div class="field fl">{{ form.tel_fijo }}<label>{{ form.tel_fijo.label }}</label></div>
+      <div class="field fl">{{ form.tel_movil }}<label>{{ form.tel_movil.label }}</label></div>
+      <div class="field fl">{{ form.email }}<label>{{ form.email.label }}</label></div>
     </div>
 
     <h3>Datos laborales (opcional)</h3>
     <div class="form-grid">
         <div class="field check-item"><label>{{ form.trabaja }} Trabaja actualmente</label></div>
-        <div class="field field--span-2 fl">{{ form.empleador }}<label>Empleador</label></div>
-        <div class="field fl">{{ form.horario_trabajo }}<label>Horario de trabajo</label></div>
-        <div class="field field--span-3 fl">{{ form.domicilio_trabajo }}<label>Domicilio laboral</label></div>
+        <div class="field field--span-2 fl">{{ form.empleador }}<label>{{ form.empleador.label }}</label></div>
+        <div class="field fl">{{ form.horario_trabajo }}<label>{{ form.horario_trabajo.label }}</label></div>
+        <div class="field field--span-3 fl">{{ form.domicilio_trabajo }}<label>{{ form.domicilio_trabajo.label }}</label></div>
     </div>
 
     <h3>Estudios cursados</h3>
     <div class="form-grid">
       <div class="field field--span-3"><strong>Secundario</strong></div>
-      <div class="field field--span-2 fl">{{ form.sec_titulo }}<label>Título secundario</label></div>
-      <div class="field fl">{{ form.sec_fecha_egreso }}<label>Fecha de egreso</label></div>
-      <div class="field fl">{{ form.sec_establecimiento }}<label>Establecimiento</label></div>
-      <div class="field fl">{{ form.sec_localidad }}<label>Localidad</label></div>
-      <div class="field fl">{{ form.provincia_nac }}<label>Provincia</label></div>
-      <div class="field fl">{{ form.pais_nac }}<label>País</label></div>
+      <div class="field field--span-2 fl">{{ form.sec_titulo }}<label>{{ form.sec_titulo.label }}</label></div>
+      <div class="field fl">{{ form.sec_fecha_egreso }}<label>{{ form.sec_fecha_egreso.label }}</label></div>
+      <div class="field fl">{{ form.sec_establecimiento }}<label>{{ form.sec_establecimiento.label }}</label></div>
+      <div class="field fl">{{ form.sec_localidad }}<label>{{ form.sec_localidad.label }}</label></div>
+      <div class="field fl">{{ form.sec_provincia }}<label>{{ form.sec_provincia.label }}</label></div>
+      <div class="field fl">{{ form.sec_pais }}<label>{{ form.sec_pais.label }}</label></div>
 
       <div class="field field--span-3"><strong>Terciario/Universitario (opcional)</strong></div>
-      <div class="field field--span-2 fl">{{ form.sup1_titulo }}<label>Título</label></div>
-      <div class="field fl">{{ form.sup1_fecha_egreso }}<label>Fecha de egreso</label></div>
+      <div class="field field--span-2 fl">{{ form.sup1_titulo }}<label>{{ form.sup1_titulo.label }}</label></div>
+      <div class="field fl">{{ form.sup1_fecha_egreso }}<label>{{ form.sup1_fecha_egreso.label }}</label></div>
+      <div class="field fl">{{ form.sup1_establecimiento }}<label>{{ form.sup1_establecimiento.label }}</label></div>
+      <div class="field fl">{{ form.sup1_localidad }}<label>{{ form.sup1_localidad.label }}</label></div>
+      <div class="field fl">{{ form.sup1_provincia }}<label>{{ form.sup1_provincia.label }}</label></div>
+      <div class="field fl">{{ form.sup1_pais }}<label>{{ form.sup1_pais.label }}</label></div>
 
       <div class="field field--span-3"><strong>Otro Título (opcional)</strong></div>
-      <div class="field field--span-2 fl">{{ form.sup2_titulo }}<label>Título</label></div>
-      <div class="field fl">{{ form.sup2_fecha_egreso }}<label>Fecha de egreso</label></div>
+      <div class="field field--span-2 fl">{{ form.sup2_titulo }}<label>{{ form.sup2_titulo.label }}</label></div>
+      <div class="field fl">{{ form.sup2_fecha_egreso }}<label>{{ form.sup2_fecha_egreso.label }}</label></div>
+      <div class="field fl">{{ form.sup2_establecimiento }}<label>{{ form.sup2_establecimiento.label }}</label></div>
+      <div class="field fl">{{ form.sup2_localidad }}<label>{{ form.sup2_localidad.label }}</label></div>
+      <div class="field fl">{{ form.sup2_provincia }}<label>{{ form.sup2_provincia.label }}</label></div>
+      <div class="field fl">{{ form.sup2_pais }}<label>{{ form.sup2_pais.label }}</label></div>
     </div>
+
+    <p class="text-sm text-gray-600 mt-4">
+      La documentación requerida se verificará al momento de la confirmación presencial.
+      En la planilla PDF aparecerá el checklist para completar por Bedel/Secretaría.
+    </p>
 
     <h3 style="margin-top:18px;">Foto 4x4</h3>
     <div class="photo-upload">
