@@ -5,13 +5,14 @@ from pathlib import Path
 
 from django.conf import settings
 from django.http import HttpResponse, Http404
+from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
-from reportlab.lib.utils import ImageReader
+from reportlab.lib.utils import ImageReader, simpleSplit
 
 import qrcode
 import traceback
@@ -20,6 +21,17 @@ from .models import Preinscripcion  # ajustá el import si tu app cambia
 
 
 # ------------------------ helpers ------------------------
+
+def _wrap_text(c, text, x, y, max_width, font_name="Helvetica", font_size=9, leading=12):
+    if not text:
+        return y
+    lines = simpleSplit(str(text), font_name, font_size, max_width)
+    # Dibuja las líneas desde la posición y hacia abajo
+    for i, line in enumerate(lines):
+        c.drawString(x, y - (i * leading), line)
+    # Devuelve la nueva posición 'y' después de dibujar todas las líneas
+    return y - (len(lines) * leading)
+
 
 def _img_or_none(path_like):
     try:
@@ -135,7 +147,6 @@ def _get(v, *alts):
         if a:
             return a
     return None
-
 def _nz(v, placeholder="---"):
     return str(v) if (v is not None and str(v).strip() != "") else placeholder
 
@@ -200,7 +211,6 @@ def _get(v, *alts):
         if a:
             return a
     return None
-
 def _nz(v, placeholder="---"):
     return str(v) if (v is not None and str(v).strip() != "") else placeholder
 
@@ -321,16 +331,28 @@ def preinscripcion_pdf(request, pk):
         y -= gap(2)
         left_x  = M
         right_x = M + usable_w/2 + 6*mm
+        label_w = 35*mm
+        value_x = left_x + label_w + 3*mm
+        max_w = (usable_w/2) - label_w - 3*mm
 
-        left_pairs = [
-            ("Domicilio", getattr(pre, "domicilio", "")),
-            ("Teléfono fijo", getattr(pre, "tel_fijo", "")),
-        ]
-        right_pairs = [
-            ("Teléfono móvil", getattr(pre, "tel_movil", "")),
-            ("E-mail", getattr(pre, "email", "")),
-        ]
-        y = _two_col_kv(c, y, left_pairs, right_pairs, left_x, right_x, row_h)
+        # Domicilio (con wrap)
+        _text(c, left_x, y, "Domicilio:", size=9, bold=True)
+        y_after_domicilio = _wrap_text(c, getattr(pre, "domicilio", ""),
+                                       x=value_x, y=y, max_width=max_w,
+                                       font_size=9, leading=row_h)
+
+        # Teléfono fijo (debajo de la etiqueta de domicilio)
+        y_tel = y - row_h
+        _label_value(c, left_x, y_tel, "Teléfono fijo", getattr(pre, "tel_fijo", ""))
+
+        # Columna derecha
+        y_r = y
+        _label_value(c, right_x, y_r, "Teléfono móvil", getattr(pre, "tel_movil", "")); y_r -= row_h
+        _label_value(c, right_x, y_r, "E-mail", getattr(pre, "email", "")); y_r -= row_h
+
+        # La nueva 'y' es el punto más bajo alcanzado
+        y = min(y_after_domicilio, y_tel, y_r) - row_h
+
 
         # ===== Estudios (3 niveles: Secundario, Terciario, Universitario) =====
         _section_title(c, M, y, "Estudios", usable_w)
@@ -465,13 +487,25 @@ def preinscripcion_pdf(request, pk):
         _label_value_auto(c, comp_left_x, COMP_MARGIN_BOTTOM +  6*mm, "Número de preinscripción", numero, gap=5*mm, min_lw=40*mm)
 
         # QR del comprobante (abajo a la derecha, igual que antes)
-        _draw_qr(c, numero, x_mm=(W / mm) - 30, y_mm=8, size_mm=22)
+        try:
+            verify_url = request.build_absolute_uri(
+                reverse("pre_public_verify", args=[numero])
+            )
+        except Exception:
+            verify_url = numero
+        _draw_qr(c, verify_url, x_mm=(W / mm) - 30, y_mm=8, size_mm=22)
 
         c.showPage()
         c.save()
 
         buffer.seek(0)
-        resp = HttpResponse(buffer.getvalue(), content_type="application/pdf")
+        pdf_bytes = buffer.getvalue()
+
+        # Guardar el PDF en el modelo si no existe
+        if not pre.comprobante_pdf:
+            pre.comprobante_pdf.save(f"{numero}.pdf", ContentFile(pdf_bytes), save=True)
+
+        resp = HttpResponse(pdf_bytes, content_type="application/pdf")
         resp["Content-Disposition"] = f'inline; filename="pre_{numero}.pdf"'
         return resp
     except Exception as e:

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Confirmación Bedel</h1>
+<p><strong>Número:</strong> {{ obj.numero }} – <strong>Alumno/a:</strong> {{ obj.apellido }}, {{ obj.nombres }} – <strong>Carrera:</strong> {{ obj.carrera }}</p>
+<form method="post">{% csrf_token %}
+<fieldset>
+<legend>Documentación presentada</legend>
+{{ form.non_field_errors }}
+<div class="grid">
+{{ form.doc_fotocopia_titulo_legalizada }} Título legalizado<br>
+{{ form.doc_fotocopia_analitico_legalizada }} Analítico legalizado<br>
+{{ form.doc_fotos_4x4 }} 2 fotos 4x4<br>
+{{ form.doc_titulo_terciario_universitario }} Título terciario/univ.<br>
+{{ form.doc_cert_alumno_regular }} Cert. alumno regular<br>
+{{ form.doc_cert_titulo_en_tramite }} Título en trámite<br>
+{{ form.doc_cert_buena_salud }} Buena salud<br>
+{{ form.doc_folios }} 3 folios<br>
+{{ form.doc_declaracion_jurada }} Declaración jurada<br>
+{% if obj.carrera and "docent" in obj.carrera.nombre|lower %}
+{{ form.doc_incumbencias }} Incumbencias (solo carreras docentes)
+{% endif %}
+{{ form.doc_adeuda_materias }} Adeuda materias
+<div>Escuela: {{ form.doc_adeuda_materias_escuela }}</div>
+<div>Detalle: {{ form.doc_adeuda_materias_detalle }}</div>
+</div>
+</fieldset>
+<p><label>Estado: {{ form.estado }}</label></p>
+<button type="submit">Guardar</button>
+</form>
+{% endblock %}

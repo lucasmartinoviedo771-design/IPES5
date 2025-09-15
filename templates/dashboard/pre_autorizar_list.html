@@ -1,0 +1,38 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<h1>Pendientes / Gestión de inscripciones</h1>
+<form method="get" class="card" style="padding:12px;margin-bottom:12px">
+  <input type="text" name="q" value="{{ q }}" placeholder="Buscar por DNI, apellido, número" />
+  <select name="estado">
+    {% for e in estados %}
+      <option value="{{ e }}"{% if estado == e %} selected{% endif %}>{{ e }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit">Filtrar</button>
+</form>
+
+<table style="width:100%;border-collapse:collapse">
+  <thead>
+    <tr><th>#</th><th>Alumno</th><th>Carrera</th><th>Condición</th><th></th></tr>
+  </thead>
+  <tbody>
+    {% for row in rows %}
+      <tr>
+        <td>{{ row.obj.numero|default:"—" }}</td>
+        <td>{{ row.obj.apellido }}, {{ row.obj.nombres }}</td>
+        <td>{{ row.obj.carrera.nombre|default:row.obj.carrera }}</td>
+        <td>
+          <span style="padding:3px 6px;border-radius:4px;
+                       {% if row.condicion == 'REGULAR' %}background:#e6ffed;color:#0a662e;
+                       {% else %}background:#fff4e5;color:#8a4b00;{% endif %}">
+            {{ row.condicion }}
+          </span>
+        </td>
+        <td><a href="{{ row.autorizar_url }}">Autorizar</a></td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5">Sin resultados.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

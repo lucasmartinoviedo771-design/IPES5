@@ -1,15 +1,16 @@
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponseForbidden
-from django.db.models import Count
+from django.db.models import Count, Q
 from apps.users.models import UserProfile
-from apps.preinscriptions.models import Preinscripcion
+from apps.preinscriptions.models import Preinscripcion, PortalNotification
 from apps.inscriptions.models import InscripcionCarrera, LegajoItem
 from apps.academics.models import Carrera
 from django.core.files.base import ContentFile
 from django.urls import reverse
 from apps.preinscriptions.forms import PreinscripcionForm
-from apps.preinscriptions.pdf_utils import render_pdf_from_template
+from .utils import compute_condicion_admin, es_certificacion_docente
+from .forms import PreAutorizarForm
 
 import logging
 from django.http import HttpResponse, HttpResponseServerError
@@ -22,6 +23,7 @@ from datetime import datetime
 
 from django.conf import settings
 from django.http import Http404
+from django.template import TemplateDoesNotExist
 from django.templatetags.static import static
 
 from reportlab.pdfgen import canvas
@@ -209,7 +211,7 @@ def preinscripcion_pdf(request, pk):
             s = "" if x is None else str(x)
             if FONT_MAIN != "DejaVuSans":
                 s = (s.replace("–", "-").replace("—", "-")
-                       .replace("’", "'" ).replace("“", '"').replace("”", '"'))
+                       .replace("’", "'").replace("“", '"').replace("”", '"'))
             return s
 
         # ======= salida PDF =======
@@ -340,8 +342,6 @@ def preinscripcion_pdf(request, pk):
         checkbox(xcol, y-32,  bool(pre.doc_fotos_4x4), "2 fotos carnet 4x4")
         checkbox(xcol, y-48,  bool(pre.doc_titulo_secundario), "Título secundario / terciario / universitario")
         checkbox(xcol, y-64,  bool(pre.doc_cert_alumno_regular), "Certificado de alumno regular")
-        checkbox(xcol, y-80,  bool(pre.doc_cert_buena_salud), "Certificado de buena salud")
-
         checkbox(col2, y,     bool(pre.doc_cert_titulo_en_tramite), "Certificado de título en trámite")
         checkbox(col2, y-16,  bool(pre.doc_folios), "3 folios oficio")
         checkbox(col2, y-32,  bool(pre.doc_adeuda_materias), "Si adeuda materias (adjunta constancia)")
@@ -387,7 +387,129 @@ def preinscripcion_pdf(request, pk):
         return response
 
     except Exception:
-        if settings.DEBUG:
-            return HttpResponse("PDF ERROR\n\n" + traceback.format_exc(),
-                                content_type="text/plain", status=500)
-        raise
+        logger.exception("Error generando PDF de preinscripción")
+        return HttpResponse("PDF ERROR", content_type="text/plain", status=500)
+
+
+is_bedel = user_passes_test(lambda u: u.is_staff or u.has_perm("preinscriptions.change_preinscripcion"))
+
+
+@login_required
+@is_bedel
+def preinscripcion_confirmar(request, pk):
+    obj = get_object_or_404(Preinscripcion, pk=pk)
+    if request.method == "POST":
+        form = BedelConfirmForm(request.POST, instance=obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Preinscripción actualizada.")
+            return redirect("pre_ok", pk=obj.pk)
+    else:
+        form = BedelConfirmForm(instance=obj)
+    return render(request, "dashboard/pre_bedel_confirm.html", {"obj": obj, "form": form})
+
+PUBLIC_FIELDS = ("numero", "estado")
+
+def preinscripcion_verificar_public(request, numero: str):
+    obj = get_object_or_404(Preinscripcion, numero=numero)
+    # Política simple: solo mostrar CONFIRMADAS
+    if obj.estado != "CONFIRMADA":
+        raise Http404("No encontrada")
+    return render(request, "dashboard/pre_public_verify.html", {
+        "numero": obj.numero,
+        "carrera": getattr(obj.carrera, "nombre", str(obj.carrera)),
+        "estado": obj.estado,
+    })
+
+def build_verify_url(request, obj, signed: bool = False) -> str:
+    return request.build_absolute_uri(reverse("pre_public_verify", args=[obj.numero]))
+
+
+@login_required
+@user_passes_test(_is_staff_like)
+def preinscripciones_autorizar_list(request):
+    # Estados para el combo/filtro del template
+    ESTADOS = ["PENDIENTE", "NUEVA", "CONFIRMADA", "BAJA", "TODAS"]
+
+    q = (request.GET.get("q") or "").strip()
+    estado_sel = (request.GET.get("estado") or "PENDIENTE").upper()
+
+    qs = Preinscripcion.objects.select_related("carrera")
+    if estado_sel != "TODAS":
+        qs = qs.filter(estado=estado_sel)
+    if q:
+        qs = qs.filter(
+            Q(numero__icontains=q) |
+            Q(dni__icontains=q) |
+            Q(apellido__icontains=q) |
+            Q(nombres__icontains=q)
+        )
+
+    qs = qs.order_by("-id")
+
+    # Si el template pinta “CONDICIONAL”, dale la condición ya computada
+    rows = [
+        {
+            "obj": pre,
+            "condicion": compute_condicion_admin(pre),
+            "autorizar_url": reverse("dashboard:pre_autorizar", args=[pre.pk]),
+        }
+        for pre in qs[:200]
+    ]
+
+    ctx = {
+        "rows": rows,
+        "estados": ESTADOS,
+        "estado_sel": estado_sel,
+        "q": q,
+    }
+
+    # Soporta ambos nombres de template (según cómo lo tengas guardado)
+    try:
+        return render(request, "dashboard/preinscripciones_autorizar_list.html", ctx)
+    except TemplateDoesNotExist:
+        return render(request, "dashboard/pre_autorizar_list.html", ctx)
+
+
+@login_required
+@user_passes_test(_is_staff_like)
+def preinscripcion_autorizar(request, pk):
+    pre = get_object_or_404(Preinscripcion, pk=pk)
+    if request.method == "POST":
+        form = PreAutorizarForm(request.POST, instance=pre)
+        if form.is_valid():
+            pre = form.save()
+            condicion = compute_condicion_admin(pre)
+
+            # Botón "Confirmar inscripción" usa name="confirmar"
+            if "confirmar" in request.POST:
+                pre.estado = "CONFIRMADA"
+                pre.save(update_fields=["estado"])
+                # Notificación automática
+                if getattr(pre, "user_id", None):
+                    PortalNotification.objects.create(
+                        user=pre.user,
+                        title="Inscripción confirmada",
+                        message=f"Tu inscripción a {pre.carrera} ha sido confirmada. Condición: {condicion}.",
+                        kind="inscripcion_confirmada",
+                        related_object="preinscripcion",
+                        object_id=pre.pk,
+                    )
+                messages.success(request, f"Inscripción confirmada ({condicion}).")
+                return redirect("dashboard:pre_autorizar_list")
+
+            messages.success(request, f"Cambios guardados. Condición: {condicion}.")
+            return redirect("dashboard:pre_autorizar", pk=pre.pk)
+    else:
+        form = PreAutorizarForm(instance=pre)
+
+    return render(
+        request,
+        "dashboard/pre_autorizar.html",
+        {
+            "obj": pre,
+            "form": form,
+            "condicion": compute_condicion_admin(pre),
+            "es_cd": es_certificacion_docente(getattr(pre, "carrera", None)),
+        },
+    )

@@ -1,0 +1,92 @@
+{# ... tu layout ... #}
+
+<div class="flex items-center gap-3">
+  <span>Condición:</span>
+  {% if condicion == 'REGULAR' %}
+    <span class="badge bg-green-100 text-green-800">REGULAR</span>
+  {% else %}
+    <span class="badge bg-orange-100 text-orange-800">CONDICIONAL</span>
+  {% endif %}
+</div>
+
+<form method="post" class="mt-4">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+
+  {# --- Sección documentación (usa tus campos reales) --- #}
+  <div id="docs" class="grid grid-cols-2 gap-6">
+    <div>
+      <label>{{ form.titulo_legalizado }} Título secundario legalizado</label><br>
+      <label>{{ form.tres_folios }} 3 folios</label><br>
+      <label>{{ form.fotos_4x4 }} 2 fotos 4x4</label><br>
+      <label>{{ form.cert_alumno_regular }} Cert. alumno regular</label><br>
+      <label>{{ form.titulo_en_tramite }} Título en trámite</label><br>
+      <label>{{ form.adeuda_materias }} Adeuda materias</label>
+      <div class="mt-2">
+        <div>Escuela: {{ form.escuela }}</div>
+        <div>Detalle: {{ form.detalle }}</div>
+      </div>
+      <label class="mt-2 block">{{ form.declaracion_jurada }} Declaración jurada / Nota compromiso</label>
+    </div>
+
+    <div id="bloque-cd">
+      <label>{{ form.titulo_terciario_universitario }} Título terciario/universitario</label>
+      {# otros específicos de CD si los tenés #}
+    </div>
+  </div>
+
+  <div class="mt-4">
+    <label>Estado: {{ form.estado }}</label>
+  </div>
+
+  <div class="mt-6 flex gap-3">
+    <button type="submit" class="btn">Guardar cambios</button>
+    <button type="submit" name="confirmar" value="1" class="btn btn-primary">Confirmar inscripción</button>
+  </div>
+</form>
+
+<script>
+(function(){
+  const esCD = {{ es_cd|yesno:"true,false" }};
+  const chkTituloSec = document.getElementById("id_titulo_legalizado");
+  const chkTramite    = document.getElementById("id_titulo_en_tramite");
+  const chkAdeuda     = document.getElementById("id_adeuda_materias");
+  const escuela       = document.getElementById("id_escuela")?.closest("div");
+  const detalle       = document.getElementById("id_detalle")?.closest("div");
+  const chkTer        = document.getElementById("id_titulo_terciario_universitario");
+
+  function exclusividad(e){
+    const src = e.target;
+    if (src.checked){
+      if (src !== chkTituloSec && chkTituloSec) chkTituloSec.checked = false;
+      if (src !== chkTramite    && chkTramite)    chkTramite.checked    = false;
+      if (src !== chkAdeuda     && chkAdeuda)     chkAdeuda.checked     = false;
+    }
+    toggleAdeuda();
+  }
+
+  function toggleAdeuda(){
+    const show = chkAdeuda && chkAdeuda.checked && !esCD;
+    if (escuela){ escuela.style.display = show ? "" : "none"; }
+    if (detalle){ detalle.style.display = show ? "" : "none"; }
+  }
+
+  function toggleCD(){
+    // En CD: ocultar Título Secundario y Adeuda; mostrar Terciario
+    const rowsOcultar = [chkTituloSec?.closest("label"), chkAdeuda?.closest("label"), escuela, detalle];
+    rowsOcultar.forEach(el => { if (el) el.style.display = esCD ? "none" : ""; });
+    if (esCD && chkTituloSec) chkTituloSec.checked = false;
+    if (esCD && chkAdeuda){ chkAdeuda.checked = false; toggleAdeuda(); }
+    const bloqueCD = document.getElementById("bloque-cd");
+    if (bloqueCD) bloqueCD.style.display = esCD ? "" : "none";
+    if (esCD && chkTer){ /* opcional: marcar como requerido visualmente */ }
+  }
+
+  [chkTituloSec, chkTramite, chkAdeuda].forEach(el => {
+    if (el){ el.addEventListener("change", exclusividad); }
+  });
+
+  toggleCD();
+  toggleAdeuda();
+})();
+</script>

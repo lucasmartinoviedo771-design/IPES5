@@ -1,13 +1,25 @@
 {% extends "dashboard/base.html" %}
+{% load safeurl %}
 {% block content %}
 <div class="grid md:grid-cols-2 gap-6">
   <div class="bg-white p-6 rounded-xl shadow">
     <h1 class="text-xl font-semibold mb-2">Bienvenido</h1>
     <p class="text-sm text-slate-600">Este es un demo visual mínimo para validar flujos:</p>
     <ul class="list-disc pl-5 mt-2 text-sm">
-      <li><a class="text-blue-600 underline" href="/preinscripcion">Formulario de Preinscripción</a></li>
-      <li><a class="text-blue-600 underline" href="/panel">Panel de gestión</a> (requiere login y rol Staff)</li>
-      <li><a class="text-blue-600 underline" href="/api/v1/docs">Swagger API</a></li>
+      <li><a class="text-blue-600 underline" href="{% url 'dashboard:preinscripcion' %}">Formulario de Preinscripción</a></li>
+      <li><a class="text-blue-600 underline" href="{% url 'dashboard:panel' %}">Panel de gestión</a> (requiere login y rol Staff)</li>
+      {% if request.user.is_authenticated %}
+        {% if request.user.is_staff or perms.preinscriptions.change_preinscripcion %}
+          {% safe_url 'pre_autorizar_list' as autorizar_href %}
+          {% if autorizar_href != '#' %}
+            <li><a class="text-blue-600 underline" href="{{ autorizar_href }}">Autorizar inscripciones</a> (Staff)</li>
+          {% endif %}
+        {% endif %}
+      {% endif %}
+      {% safe_url 'schema-swagger-ui' as swagger_href %}
+      {% if swagger_href != '#' %}
+        <li><a class="text-blue-600 underline" href="{{ swagger_href }}">Swagger API</a></li>
+      {% endif %}
     </ul>
   </div>
 </div>

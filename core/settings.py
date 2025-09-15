@@ -38,6 +38,7 @@ AUTH_USER_MODEL = 'users.UserProfile'
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    'core.middleware.LogRefererMiddleware',
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -60,6 +61,9 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
             ],
+            "libraries": {
+                "safeurl": "apps.dashboard.templatetags.safeurl",
+            }
         },
     },
 ]
@@ -112,3 +116,7 @@ LOGGING = {
     "handlers": {"console": {"class": "logging.StreamHandler"}},
     "root": {"handlers": ["console"], "level": "DEBUG"},
 }
+
+LOGIN_URL = "/accounts/login/"
+LOGIN_REDIRECT_URL = "/dashboard/"
+LOGOUT_REDIRECT_URL = "/"

@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import Preinscripcion
+from .models import Preinscripcion, PreinscripcionSequence, PortalNotification
+
 
 @admin.register(Preinscripcion)
 class PreinscripcionAdmin(admin.ModelAdmin):
@@ -9,6 +10,8 @@ class PreinscripcionAdmin(admin.ModelAdmin):
     """
     # --- Vista de Lista ---
     list_display = (
+        'numero',
+        'estado',
         'apellido',
         'nombres',
         'dni',
@@ -30,15 +33,15 @@ class PreinscripcionAdmin(admin.ModelAdmin):
         'doc_declaracion_jurada',
     )
     # --- Filtros y Búsqueda ---
-    list_filter = ('carrera', 'creado')
-    search_fields = ('apellido', 'nombres', 'dni', 'cuil')
+    list_filter = ('estado', 'carrera', 'creado')
+    search_fields = ('numero', 'apellido', 'nombres', 'dni', 'cuil')
     date_hierarchy = 'creado'
 
     # --- Vista de Detalle (Formulario) ---
     # Organiza los campos en secciones lógicas
     fieldsets = (
         ("Datos del Postulante", {
-            'fields': ('carrera', ('apellido', 'nombres'), ('dni', 'cuil'), 'fecha_nacimiento', 'estado_civil')
+            'fields': ('carrera', 'estado', ('apellido', 'nombres'), ('dni', 'cuil'), 'fecha_nacimiento', 'estado_civil')
         }),
         ("Origen y Contacto", {
             'fields': (('localidad_nac', 'provincia_nac', 'pais_nac'), 'nacionalidad', 'domicilio', ('tel_fijo', 'tel_movil'), 'email')
@@ -78,10 +81,22 @@ class PreinscripcionAdmin(admin.ModelAdmin):
             )
         }),
         ("Foto 4x4", {
-            'fields': ('foto_4x4',)
+            'fields': ('foto_4x4', 'comprobante_pdf')
         })
     )
 
     def get_queryset(self, request):
         # Optimiza la carga de la FK a carrera
         return super().get_queryset(request).select_related('carrera')
+
+
+@admin.register(PreinscripcionSequence)
+class PreinscripcionSequenceAdmin(admin.ModelAdmin):
+    list_display = ("anio", "last")
+
+
+@admin.register(PortalNotification)
+class PortalNotificationAdmin(admin.ModelAdmin):
+    list_display = ("user", "title", "created_at", "read_at")
+    list_filter = ("read_at",)
+    search_fields = ("title", "message", "user__username", "user__email")

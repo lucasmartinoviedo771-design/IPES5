@@ -1,10 +1,18 @@
 # apps/preinscripciones/models.py
-from django.db import models
+from django.conf import settings
+from django.db import models, transaction
 from django.core.validators import RegexValidator, EmailValidator
 from django.core.exceptions import ValidationError
 from apps.academics.models import Carrera
 from django.utils import timezone
 import uuid
+
+class PreinscripcionSequence(models.Model):
+    anio = models.IntegerField(unique=True)
+    last = models.IntegerField(default=0)
+
+    class Meta:
+        db_table = "preinscriptions_sequence"
 
 class EstadoCivil(models.TextChoices):
     SOLTERO = "SOLTERO", "Soltero/a"
@@ -69,7 +77,14 @@ class Preinscripcion(models.Model):
     adeuda_materias_escuela = models.CharField(max_length=160, blank=True)
     doc_incumbencias = models.BooleanField(default=False)
     doc_declaracion_jurada = models.BooleanField(default=False)
-    
+    estado = models.CharField(max_length=15, choices=[("NUEVA", "Nueva"), ("CONFIRMADA", "Confirmada")], default="NUEVA")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name="preinscripciones",
+        help_text="Usuario dueño de esta preinscripción"
+    )
     anio = models.PositiveIntegerField(db_index=True, default=timezone.now().year)
     numero = models.CharField(
         "Número",
@@ -78,7 +93,7 @@ class Preinscripcion(models.Model):
         null=True, blank=True,
         db_index=True,
     )
-    comprobante_pdf = models.FileField(upload_to="preinscripciones/", blank=True, null=True)
+    comprobante_pdf = models.FileField(upload_to="preinscripciones/%Y/", blank=True, null=True)
     creado = models.DateTimeField(default=timezone.now, editable=False)
     created_at = models.DateTimeField(auto_now_add=True) # Mantener created_at para compatibilidad
 
@@ -86,34 +101,16 @@ class Preinscripcion(models.Model):
         ordering = ["-creado"]
 
     def save(self, *args, **kwargs):
-        from django.db import transaction
-        from django.db.models import F
-        import re
-
         if not self.anio:
             self.anio = timezone.now().year
 
         if not self.numero:
-            base = f"PRE-{self.anio}-"
-
             with transaction.atomic():
-                # Buscamos el último número emitido en ese año
-                last = (
-                    Preinscripcion.objects
-                    .select_for_update()  # bloquea filas durante la transacción
-                    .filter(numero__startswith=base)
-                    .order_by("-numero")
-                    .first()
-                )
-
-                if last and last.numero:
-                    m = re.search(rf"^{re.escape(base)}(\d+)$", last.numero)
-                    seq = int(m.group(1)) + 1 if m else 1
-                else:
-                    seq = 1
-
-                self.numero = f"{base}{seq:04d}"
-
+                seq, _ = PreinscripcionSequence.objects.select_for_update().get_or_create(anio=self.anio)
+                seq.last += 1
+                seq.save(update_fields=["last"])
+                self.numero = f"PRE-{self.anio}-{seq.last:04d}"
+        
         super().save(*args, **kwargs)
 
     def clean(self):
@@ -127,3 +124,32 @@ class Preinscripcion(models.Model):
 
     def __str__(self):
         return f"{self.apellido}, {self.nombres} ({self.dni})"
+
+class PortalNotification(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="portal_notifications",
+        db_index=True
+    )
+    title = models.CharField(max_length=200)
+    message = models.TextField(blank=True)
+    url = models.URLField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    read_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "portal_notifications"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"[{self.created_at:%Y-%m-%d %H:%M}] {self.title}"
+
+    def is_read(self):
+        return self.read_at is not None
+
+    def mark_read(self):
+        if not self.read_at:
+            self.read_at = timezone.now()
+            self.save(update_fields=["read_at"])
+        return self

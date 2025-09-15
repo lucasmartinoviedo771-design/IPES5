@@ -1,0 +1,16 @@
+{% load static %}
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Ingresar</title></head>
+<body>
+  <h1>Login</h1>
+  {% if form.errors %}<p style="color:red">Usuario o contraseña inválidos.</p>{% endif %}
+  <form method="post" action="{% url 'login' %}">
+    {% csrf_token %}
+    <p><label>Usuario: {{ form.username }}</label></p>
+    <p><label>Contraseña: {{ form.password }}</label></p>
+    <button type="submit">Ingresar</button>
+    <input type="hidden" name="next" value="{{ next }}">
+  </form>
+</body>
+</html>
